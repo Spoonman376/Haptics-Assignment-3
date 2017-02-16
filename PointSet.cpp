@@ -121,6 +121,8 @@ bool PointSet::loadFromFile(std::string a_filename)
              << " elements." << endl;
     }
     
+    //tree = new SphereTree(m_points);
+
     return result;
 }
 
@@ -253,17 +255,17 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     for (int i = 0; i < m_points.size(); ++i) {
       cVector3d p = m_points[i];
 
-      m_colors[i].setRed();
+     // m_colors[i].setRed();
 
       if (cDistance(p, m_interactionPoint) < radiusOfInfluence) {
         localPoints.push_back(p - m_interactionPoint);
-        m_colors[i].setGreenLimeGreen();
+        //m_colors[i].setGreenLimeGreen();
       }
 
       if (cDistance(p, a_toolPos) < 0.15) {
         m_interactionInside = true;
         m_interactionNormal = cNormalize(m_interactionPoint - p);
-        m_colors[i].setBlueCadet();
+        //[i].setBlueCadet();
       }
 
     }

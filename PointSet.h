@@ -21,6 +21,7 @@
 #define POINTSET_H
 
 #include "chai3d.h"
+#include "SphereTree.h"
 
 class PointSet : public chai3d::cMultiMesh
 {
@@ -43,6 +44,8 @@ class PointSet : public chai3d::cMultiMesh
 public:
     PointSet();
     virtual ~PointSet();
+
+    SphereTree* tree;
 
     //! Loads a point set from a ply, obj, or 3ds file.
     virtual bool loadFromFile(std::string a_filename);

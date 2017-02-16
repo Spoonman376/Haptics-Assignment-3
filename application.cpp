@@ -53,6 +53,8 @@ cWorld* world;
 
 // a camera to render the world in the window display
 cCamera* camera;
+double mouseOldX;
+double mouseOldY;
 
 // a light source to illuminate the objects in the world
 cSpotLight *light;
@@ -68,6 +70,15 @@ cLabel* labelRates;
 
 // a virtual tool representing the haptic device in the scene
 cToolCursor* tool;
+
+// create the object representing the implicit surface
+PointSet *ledge;
+PointSet *bowl;
+PointSet *dragon;
+PointSet *desk;
+PointSet *bunny;
+PointSet *room;
+
 
 // flag to indicate if the haptic simulation currently running
 bool simulationRunning = false;
@@ -106,6 +117,10 @@ void windowSizeCallback(GLFWwindow* a_window, int a_width, int a_height);
 
 // callback when an error GLFW occurs
 void errorCallback(int error, const char* a_description);
+
+void scrollCallback(GLFWwindow* window, double x, double y);
+void motion(GLFWwindow* window, double x, double y);
+void mouse(GLFWwindow* window, int button, int action, int mods);
 
 // callback when a key is pressed
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods);
@@ -206,7 +221,10 @@ int main(int argc, char* argv[])
     glfwSetWindowPos(window, x, y);
 
     // set key callback
+    glfwSetScrollCallback(window, scrollCallback);
     glfwSetKeyCallback(window, keyCallback);
+    glfwSetMouseButtonCallback(window, mouse);
+    glfwSetCursorPosCallback(window, motion);
 
     // set resize callback
     glfwSetWindowSizeCallback(window, windowSizeCallback);
@@ -243,9 +261,11 @@ int main(int argc, char* argv[])
     world->addChild(camera);
 
     // position and orient the camera
-    camera->set( cVector3d (3.0, 0.0, 1.0),    // camera position (eye)
+    camera->set( cVector3d (0.0, 0.0, 0.0),    // camera position (eye)
                  cVector3d (0.0, 0.0, 0.0),    // look at position (target)
                  cVector3d (0.0, 0.0, 1.0));   // direction of the (up) vector
+
+    camera->setSphericalRad(3.5, M_PI / 2.75, 0);
 
     // set the near and far clipping planes of the camera
     camera->setClippingPlanes(0.01, 10.0);
@@ -338,17 +358,47 @@ int main(int argc, char* argv[])
     /////////////////////////////////////////////////////////////////////////
 
     // create the object representing the implicit surface
-    PointSet *object = new PointSet();
+    ledge = new PointSet();
+    bowl = new PointSet();
+    dragon = new PointSet();
+    desk = new PointSet();
+    bunny = new PointSet();
+    room = new PointSet();
 
     // load point data file file
-    bool result = object->loadFromFile("p1-ledge.ply");
+    ledge->loadFromFile("p1-ledge.ply");
+    bowl->loadFromFile("p1-bowl.ply");
+    dragon->loadFromFile("p2-dragon.ply");
+    desk->loadFromFile("p2-desk.ply");
+    bunny->loadFromFile("pb-bunny.ply");
+    room->loadFromFile("pb-room.ply");
 
     // the surface effect renders a spring force between the device and proxy
     // points with the given stiffness in the material
-    object->addEffect(new cEffectSurface(object));
-    object->m_material->setStiffness(0.5 * maxStiffness);
+    ledge->addEffect(new cEffectSurface(ledge));
+    ledge->m_material->setStiffness(0.5 * maxStiffness);
 
-    world->addChild(object);
+    bowl->addEffect(new cEffectSurface(bowl));
+    bowl->m_material->setStiffness(0.5 * maxStiffness);
+
+    dragon->addEffect(new cEffectSurface(dragon));
+    dragon->m_material->setStiffness(0.5 * maxStiffness);
+
+    desk->addEffect(new cEffectSurface(desk));
+    desk->m_material->setStiffness(0.5 * maxStiffness);
+
+    bunny->addEffect(new cEffectSurface(bunny));
+    bunny->m_material->setStiffness(0.5 * maxStiffness);
+
+    room->addEffect(new cEffectSurface(room));
+    room->m_material->setStiffness(0.5 * maxStiffness);
+
+    world->addChild(ledge);
+
+    //cShapeSphere* sphere = new cShapeSphere(ledge->tree->radius);
+    //sphere->setLocalPos(ledge->tree->centerPoint);
+    //world->addChild(sphere);
+
 
 
     //--------------------------------------------------------------------------
@@ -439,6 +489,56 @@ void errorCallback(int a_error, const char* a_description)
 
 //------------------------------------------------------------------------------
 
+
+void scrollCallback(GLFWwindow* window, double x, double y)
+{
+  double azu = camera->getSphericalAzimuthRad();
+  double alt = camera->getSphericalPolarRad();
+  double r = camera->getSphericalRadius();
+
+  r = (y > 0) ? r - 0.05 : r + 0.05;
+  r = (r < 1) ? 1 : r;
+  camera->setSphericalRadius(r);
+  camera->setSphericalAzimuthRad(azu);
+  camera->setSphericalPolarRad(alt);
+
+}
+
+void mouse(GLFWwindow* window, int button, int action, int mods)
+{
+  if (action == GLFW_PRESS)
+  {
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    mouseOldX = x;
+    mouseOldY = y;
+  }
+}
+
+void motion(GLFWwindow* window, double x, double y)
+{
+  double dx, dy;
+  dx = x - mouseOldX;
+  dy = y - mouseOldY;
+
+  mouseOldX = x;
+  mouseOldY = y;
+
+  if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1))
+  {
+    double azu = camera->getSphericalAzimuthRad();
+    double alt = camera->getSphericalPolarRad();
+    double r = camera->getSphericalRadius();
+
+    camera->setSphericalAzimuthRad(azu - dx * 0.0025);
+    camera->setSphericalPolarRad(alt - dy * 0.0025);
+    camera->setSphericalRadius(r);
+
+
+  }
+}
+
+
 void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, int a_mods)
 {
     // filter calls that only include a key press
@@ -488,6 +588,44 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
         mirroredDisplay = !mirroredDisplay;
         camera->setMirrorVertical(mirroredDisplay);
     }
+    else if (a_key == GLFW_KEY_1)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(ledge);
+    }
+    else if (a_key == GLFW_KEY_2)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(bowl);
+
+    }
+    else if (a_key == GLFW_KEY_3)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(dragon);
+    }
+    else if (a_key == GLFW_KEY_4)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(desk);
+    }
+    else if (a_key == GLFW_KEY_5)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(bunny);
+    }
+    else if (a_key == GLFW_KEY_6)
+    {
+      world->clearAllChildren();
+      world->addChild(tool);
+      world->addChild(room);
+    }
+
 }
 
 //------------------------------------------------------------------------------
