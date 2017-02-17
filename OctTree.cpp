@@ -14,7 +14,6 @@ OctTree::OctTree(vector<cVector3d> ps, cVector3d cp, double x, double y, double 
     
     vector<cVector3d> lll, llg, lgl, lgg, gll, glg, ggl, ggg;
     
-    
     for (int i = 0; i < ps.size(); ++i) {
       cVector3d p = ps[i];
       
@@ -65,7 +64,21 @@ OctTree::OctTree(vector<cVector3d> ps, cVector3d cp, double x, double y, double 
   cout << "created new node containing " << points.size() << " points" << endl;
 }
 
-OctTree::~OctTree()
+
+vector<cVector3d> OctTree::getPointsForArea(cVector3d cp, double r)
 {
-  
+
+  vector<cVector3d> pointsInArea; 
+  if (abs(cp.x() - centerPoint.x()) < distx + r && abs(cp.y() - centerPoint.y()) < disty + r && abs(cp.z() - centerPoint.z()) < distz + r) 
+  {
+    pointsInArea = points;
+ 
+    for (OctTree* child : children)
+    {
+      vector<cVector3d> childPoints = child->getPointsForArea(cp, r);
+      copy(childPoints.begin(), childPoints.end(), back_inserter(pointsInArea));
+    }
+  }
+
+  return pointsInArea;
 }

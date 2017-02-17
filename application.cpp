@@ -395,10 +395,9 @@ int main(int argc, char* argv[])
 
     world->addChild(ledge);
 
-    //cShapeSphere* sphere = new cShapeSphere(ledge->tree->radius);
-    //sphere->setLocalPos(ledge->tree->centerPoint);
-    //world->addChild(sphere);
 
+    vector<cVector3d> v = ledge->tree->getPointsForArea(cVector3d(0, 0, 0.01), 0.01);
+    cout << "there are " << v.size() << " points" << endl;
 
     //--------------------------------------------------------------------------
     // WIDGETS

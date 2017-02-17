@@ -59,8 +59,8 @@ bool PointSet::loadFromFile(std::string a_filename)
     using namespace std;
     bool result = false;
 
-  double minX, minY, minZ = __DBL_MAX__;
-  double maxX, maxY, maxZ = -__DBL_MAX__;
+  double minX, minY, minZ =  10000;
+  double maxX, maxY, maxZ = -10000;
   
     // detect PLY files to load here
     string extension = cGetFileExtension(a_filename);
@@ -267,7 +267,7 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     // with the object.
     m_interactionInside = false;
     
-    double radiusOfInfluence = 0.8;
+    /*double radiusOfInfluence = 0.8;
     std::vector<cVector3d> localPoints;
 
     for (int i = 0; i < m_points.size(); ++i) {
@@ -286,6 +286,19 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
         //[i].setBlueCadet();
       }
 
+    }*/
+
+    std::vector<cVector3d> v = tree->getPointsForArea(cVector3d(0, 0, 0.01), 0.01);
+
+    for (cVector3d vec : v)
+    {
+      for (int i = 0; i < m_points.size(); ++i)
+      {
+        if (vec.equals(m_points[i]))
+        {
+          m_colors[i].setBlueLightSteel();
+        }
+      }
     }
 
     if (!m_interactionInside) {
@@ -294,10 +307,10 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     }
     
 
-    std::vector<double> weights(localPoints.size(), 1.0);
+   // std::vector<double> weights(localPoints.size(), 1.0);
 
-    cVector3d normal = minimizeCovariance(localPoints, weights);
-    m_interactionNormal = normal;
+    //cVector3d normal = minimizeCovariance(localPoints, weights);
+    //m_interactionNormal = normal;
 
     // set the surface normal at the interaction point to help visualize the
     // tangent plane
