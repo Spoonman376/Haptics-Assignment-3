@@ -22,6 +22,8 @@
 #include <fstream>
 #include <sstream>
 
+
+
 using namespace chai3d;
 
 
@@ -56,9 +58,14 @@ bool PointSet::loadFromFile(std::string a_filename)
 {
     using namespace std;
     bool result = false;
-    
+
+  double minX, minY, minZ = __DBL_MAX__;
+  double maxX, maxY, maxZ = -__DBL_MAX__;
+  
     // detect PLY files to load here
     string extension = cGetFileExtension(a_filename);
+  
+  
     if (!extension.empty() && cStrToLower(extension) == "ply")
     {
         ifstream in(a_filename);
@@ -93,12 +100,20 @@ bool PointSet::loadFromFile(std::string a_filename)
         }
         for (int i = 0; i < nv; ++i)
         {
-            float x, y, z, r, g, b;
+            double x, y, z, r, g, b;
             getline(in, line);
             istringstream iss(line);
             iss >> x >> y >> z >> r >> g >> b;
             points->newVertex(cVector3d(x, y, z));
             points->m_vertices->setColor(i, r/255.f, g/255.f, b/255.f);
+          
+          maxX = max(x, maxX);
+          maxY = max(y, maxY);
+          maxZ = max(z, maxZ);
+
+          minX = min(x, minX);
+          minY = min(y, minY);
+          minZ = min(z, minZ);
         }
         
         in.close();
@@ -106,7 +121,9 @@ bool PointSet::loadFromFile(std::string a_filename)
     }
     // if not PLY file, use base class loader
     else result = cMultiMesh::loadFromFile(a_filename);
-    
+  
+  
+  
     // grab the points from the mesh(es) loaded
     if (result)
     {
@@ -120,9 +137,10 @@ bool PointSet::loadFromFile(std::string a_filename)
              << " with " << m_points.size()
              << " elements." << endl;
     }
-    
-    //tree = new SphereTree(m_points);
-
+  
+  cVector3d cp = cVector3d((minX + maxX)/2, (minY + maxY)/2, (minY + maxY)/2);
+  tree = new OctTree(m_points, cp, (maxX - minX)/2, (maxY - minY)/2, (maxZ - minZ)/2);
+  
     return result;
 }
 

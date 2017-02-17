@@ -367,11 +367,11 @@ int main(int argc, char* argv[])
 
     // load point data file file
     ledge->loadFromFile("p1-ledge.ply");
-    bowl->loadFromFile("p1-bowl.ply");
-    dragon->loadFromFile("p2-dragon.ply");
-    desk->loadFromFile("p2-desk.ply");
-    bunny->loadFromFile("pb-bunny.ply");
-    room->loadFromFile("pb-room.ply");
+//    bowl->loadFromFile("p1-bowl.ply");
+//    dragon->loadFromFile("p2-dragon.ply");
+//    desk->loadFromFile("p2-desk.ply");
+//    bunny->loadFromFile("pb-bunny.ply");
+//    room->loadFromFile("pb-room.ply");
 
     // the surface effect renders a spring force between the device and proxy
     // points with the given stiffness in the material
@@ -398,7 +398,6 @@ int main(int argc, char* argv[])
     //cShapeSphere* sphere = new cShapeSphere(ledge->tree->radius);
     //sphere->setLocalPos(ledge->tree->centerPoint);
     //world->addChild(sphere);
-
 
 
     //--------------------------------------------------------------------------
