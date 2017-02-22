@@ -60,8 +60,7 @@ OctTree::OctTree(vector<cVector3d> ps, cVector3d cp, double x, double y, double 
   else {
     points = ps;
   }
-
-  cout << "created new node containing " << points.size() << " points" << endl;
+  
 }
 
 
