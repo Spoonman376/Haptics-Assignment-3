@@ -267,37 +267,26 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     // with the object.
     m_interactionInside = false;
     
-    /*double radiusOfInfluence = 0.8;
+    double radiusOfInfluence = 0.8;
+    std::vector<cVector3d> v = tree->getPointsForArea(a_toolPos, radiusOfInfluence);
     std::vector<cVector3d> localPoints;
+
+    for (cVector3d vec : v)
+    {
+      if ((a_toolPos - vec).length() < radiusOfInfluence)
+      {
+        localPoints.push_back(vec);
+      }
+    }
 
     for (int i = 0; i < m_points.size(); ++i) {
       cVector3d p = m_points[i];
 
-     // m_colors[i].setRed();
+      m_colors[i].setRed();
 
       if (cDistance(p, m_interactionPoint) < radiusOfInfluence) {
         localPoints.push_back(p - m_interactionPoint);
-        //m_colors[i].setGreenLimeGreen();
-      }
-
-      if (cDistance(p, a_toolPos) < 0.15) {
-        m_interactionInside = true;
-        m_interactionNormal = cNormalize(m_interactionPoint - p);
-        //[i].setBlueCadet();
-      }
-
-    }*/
-
-    std::vector<cVector3d> v = tree->getPointsForArea(cVector3d(0, 0, 0.01), 0.01);
-
-    for (cVector3d vec : v)
-    {
-      for (int i = 0; i < m_points.size(); ++i)
-      {
-        if (vec.equals(m_points[i]))
-        {
-          m_colors[i].setBlueLightSteel();
-        }
+        m_colors[i].setGreenLimeGreen();
       }
     }
 

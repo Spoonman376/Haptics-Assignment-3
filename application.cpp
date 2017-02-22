@@ -395,10 +395,6 @@ int main(int argc, char* argv[])
 
     world->addChild(ledge);
 
-
-    vector<cVector3d> v = ledge->tree->getPointsForArea(cVector3d(0, 0, 0.01), 0.01);
-    cout << "there are " << v.size() << " points" << endl;
-
     //--------------------------------------------------------------------------
     // WIDGETS
     //--------------------------------------------------------------------------
