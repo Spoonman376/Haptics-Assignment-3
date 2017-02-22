@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
 //    dragon->loadFromFile("p2-dragon.ply");
 //    desk->loadFromFile("p2-desk.ply");
 //    bunny->loadFromFile("pb-bunny.ply");
-    room->loadFromFile("pb-room.ply");
+//    room->loadFromFile("pb-room.ply");
 
     // the surface effect renders a spring force between the device and proxy
     // points with the given stiffness in the material

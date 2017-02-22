@@ -203,7 +203,8 @@ void PointSet::render(cRenderOptions& a_options)
 //! Helper function that computes the direction of minimal co-variance of
 //! a set of (relative) position vectors and corresponding weights.
 chai3d::cVector3d PointSet::minimizeCovariance(const std::vector<chai3d::cVector3d> &a_positions,
-                                               const std::vector<double> &a_weights)
+                                               const std::vector<double> &a_weights,
+                                               const cVector3d &position)
 {
     // define standard basis vectors
     const cVector3d zero(0, 0, 0);
@@ -221,7 +222,7 @@ chai3d::cVector3d PointSet::minimizeCovariance(const std::vector<chai3d::cVector
     for (int j = 0; j < 3; ++j)
         for (int k = 0; k < 3; ++k)
             for (int i = 0; i < a_positions.size(); ++i)
-                W(j, k) += cDot(e[j], a_positions[i]) * cDot(e[k], a_positions[i]) * a_weights[i];
+                W(j, k) += cDot(e[j], a_positions[i] - position) * cDot(e[k], a_positions[i] - position) * a_weights[i];
     
     // compute eigenvalues and eigenvectors of covariance matrix
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(W);
@@ -268,14 +269,19 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     m_interactionInside = false;
     
     double radiusOfInfluence = 0.8;
-    std::vector<cVector3d> v = tree->getPointsForArea(a_toolPos, radiusOfInfluence);
-    std::vector<cVector3d> localPoints;
+    vector<cVector3d> v = tree->getPointsForArea(a_toolPos, radiusOfInfluence);
+    vector<cVector3d> localPoints; // lulz these need to be relative !!!
+    vector<double> weights;
 
+
+    // Create the localPoints and weights vectors
     for (cVector3d vec : v)
     {
-      if ((a_toolPos - vec).length() < radiusOfInfluence)
+      double w = (a_toolPos - vec).length();
+      if (w < radiusOfInfluence)
       {
         localPoints.push_back(vec);
+        weights.push_back(1.0 - (w / radiusOfInfluence));
       }
     }
 
@@ -285,10 +291,26 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
       m_colors[i].setRed();
 
       if (cDistance(p, m_interactionPoint) < radiusOfInfluence) {
-        localPoints.push_back(p - m_interactionPoint);
         m_colors[i].setGreenLimeGreen();
       }
     }
+
+    // Find a Goodish point
+    cVector3d bestPoint(0, 0, 0);
+    double wSum;
+    for (int i = 0; i < localPoints.size(); ++i) {
+      bestPoint += localPoints[i] * weights[i];
+      wSum += weights[i];
+    }
+    bestPoint /= wSum;
+
+    cVector3d normal = minimizeCovariance(localPoints, weights, bestPoint);
+
+
+    double surfaceValue = (a_toolPos - bestPoint) * normal;
+
+    cout << surfaceValue << endl;
+
 
     if (!m_interactionInside) {
       m_interactionPoint = a_toolPos;

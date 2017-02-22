@@ -40,7 +40,8 @@ class PointSet : public chai3d::cMultiMesh
     //! Helper function that computes the direction of minimal co-variance of
     //! a set of (relative) position vectors and corresponding weights.
     chai3d::cVector3d minimizeCovariance(const std::vector<chai3d::cVector3d> &a_positions,
-                                         const std::vector<double> &a_weights);
+                                         const std::vector<double> &a_weights,
+                                         const cVector3d &position);
     
 public:
     PointSet();
