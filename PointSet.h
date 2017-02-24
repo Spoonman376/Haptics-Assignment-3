@@ -43,11 +43,18 @@ class PointSet : public chai3d::cMultiMesh
                                          const std::vector<double> &a_weights,
                                          const cVector3d &position);
     
+    chai3d::cVector3d closestPointToPlane(cVector3d, cVector3d, cVector3d);
+    
+    chai3d::cVector3d oldNormal = chai3d::cVector3d(0,0,0);
+    bool moving = false;
+
+
 public:
     PointSet();
     virtual ~PointSet();
 
     OctTree* tree;
+    double surfaceValue = 0;
 
     //! Loads a point set from a ply, obj, or 3ds file.
     virtual bool loadFromFile(std::string a_filename);

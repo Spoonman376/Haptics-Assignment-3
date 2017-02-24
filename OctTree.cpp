@@ -70,7 +70,11 @@ vector<cVector3d> OctTree::getPointsForArea(cVector3d cp, double r)
   vector<cVector3d> pointsInArea; 
   if (abs(cp.x() - centerPoint.x()) < distx + r && abs(cp.y() - centerPoint.y()) < disty + r && abs(cp.z() - centerPoint.z()) < distz + r) 
   {
-    pointsInArea = points;
+    for (cVector3d point : points)
+    {
+      if ((cp - point).length() <= r)
+        pointsInArea.push_back(point);
+    }
  
     for (OctTree* child : children)
     {
