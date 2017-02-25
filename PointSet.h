@@ -49,7 +49,6 @@ class PointSet : public chai3d::cMultiMesh
     cVector3d currentNormal = chai3d::cVector3d(0, 0, 0);
     cVector3d averagePoint = chai3d::cVector3d(0, 0, 0);
     bool moving = false;
-    double radiusOfInfluence = 0.5;
 
     vector<cVector3d> localPoints;
     vector<int> localColorIndices;
@@ -67,6 +66,8 @@ public:
 
     OctTree* tree;
     double surfaceValue = 0;
+    double radiusOfInfluence;
+
 
     //! Loads a point set from a ply, obj, or 3ds file.
     virtual bool loadFromFile(std::string a_filename);

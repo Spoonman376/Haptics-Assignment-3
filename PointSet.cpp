@@ -311,8 +311,8 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     {
       // Create the weights vector and a weighted sum of the points
       vector<double> weights;
-      averagePoint = cVector3d(0, 0, 0);
-      double weightSum;
+      averagePoint.zero();
+      double weightSum = 0;
       for (cVector3d point : localPoints)
       {
         double w = (a_toolPos - point).length();
@@ -365,13 +365,14 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
 
 void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos, const chai3d::cVector3d & a_toolVel, const unsigned int a_IDN)
 {
+
   double mu_s = m_material->getStaticFriction();
   double mu_k = m_material->getDynamicFriction();
 
   cVector3d delta(0, 0, 0);
 
   int count = 0;
-  int max = 5;
+  int max = 1;
   do {
     // get the local points
     //find the local points around the tool position
@@ -390,12 +391,19 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
     {
       // Create the weights vector and a weighted sum of the points
       vector<double> weights;
-      averagePoint = m_interactionPoint;
+      averagePoint.zero();
+      double weightSum = 0;
       for (cVector3d point : localPoints)
       {
         double w = (m_interactionPoint - point).length();
         weights.push_back(1 - (w / radiusOfInfluence));
+
+        averagePoint += point * w;
+        weightSum += w;
       }
+      averagePoint /= weightSum;
+
+      m_interactionPoint = closestPointToPlane(m_interactionPoint);
 
       // Calculate a normal
       currentNormal = minimizeCovariance(localPoints, weights);

@@ -367,9 +367,14 @@ int main(int argc, char* argv[])
 
     // load point data file file
     ledge->loadFromFile("p1-ledge.ply");
-//    bowl->loadFromFile("p1-bowl.ply");
-//    dragon->loadFromFile("p2-dragon.ply");
-//    desk->loadFromFile("p2-desk.ply");
+    ledge->radiusOfInfluence = 0.5;
+    bowl->loadFromFile("p1-bowl.ply");
+    bowl->radiusOfInfluence = 0.5;
+    dragon->loadFromFile("p2-dragon.ply");
+    dragon->radiusOfInfluence = 0.1;
+    desk->loadFromFile("p2-desk.ply");
+    desk->radiusOfInfluence = 0.1;
+
 //    bunny->loadFromFile("pb-bunny.ply");
 //    room->loadFromFile("pb-room.ply");
 
@@ -651,7 +656,7 @@ void updateGraphics(void)
 
     // update haptic and graphic rate data
     labelRates->setText(cStr(freqCounterGraphics.getFrequency(), 0) + " Hz / " +
-        cStr(freqCounterHaptics.getFrequency(), 0) + " Hz" + "  Surface Value: " + cStr(ledge->surfaceValue));
+        cStr(freqCounterHaptics.getFrequency(), 0) + " Hz");
 
     // update position of label
     labelRates->setLocalPos((int)(0.5 * (width - labelRates->getWidth())), 15);
