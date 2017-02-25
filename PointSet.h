@@ -40,13 +40,25 @@ class PointSet : public chai3d::cMultiMesh
     //! Helper function that computes the direction of minimal co-variance of
     //! a set of (relative) position vectors and corresponding weights.
     chai3d::cVector3d minimizeCovariance(const std::vector<chai3d::cVector3d> &a_positions,
-                                         const std::vector<double> &a_weights,
-                                         const cVector3d &position);
+                                         const std::vector<double> &a_weights);
     
-    chai3d::cVector3d closestPointToPlane(cVector3d, cVector3d, cVector3d);
+    double surfaceFunction(cVector3d);
+    cVector3d closestPointToPlane(cVector3d);
     
-    chai3d::cVector3d oldNormal = chai3d::cVector3d(0,0,0);
+    cVector3d oldNormal = chai3d::cVector3d(0,0,0);
+    cVector3d currentNormal = chai3d::cVector3d(0, 0, 0);
+    cVector3d averagePoint = chai3d::cVector3d(0, 0, 0);
     bool moving = false;
+    double radiusOfInfluence = 0.5;
+
+    vector<cVector3d> localPoints;
+    vector<int> localColorIndices;
+
+    void setLocalPoints(cVector3d);
+
+    void computeLocalInterationInside(const chai3d::cVector3d& a_toolPos,
+                                      const chai3d::cVector3d& a_toolVel,
+                                      const unsigned int a_IDN);
 
 
 public:

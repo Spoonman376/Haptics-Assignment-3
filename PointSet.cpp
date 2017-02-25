@@ -140,8 +140,13 @@ bool PointSet::loadFromFile(std::string a_filename)
              << " elements." << endl;
     }
   
+    vector<int> cI;
+    for (int i = 0; i < m_colors.size(); ++i)
+      cI.push_back(i);
+      
+
   cVector3d cp = cVector3d((minX + maxX)/2, (minY + maxY)/2, (minY + maxY)/2);
-  tree = new OctTree(m_points, cp, (maxX - minX)/2, (maxY - minY)/2, (maxZ - minZ)/2);
+  tree = new OctTree(m_points, cI, cp, (maxX - minX)/2, (maxY - minY)/2, (maxZ - minZ)/2);
   
     return result;
 }
@@ -205,8 +210,7 @@ void PointSet::render(cRenderOptions& a_options)
 //! Helper function that computes the direction of minimal co-variance of
 //! a set of (relative) position vectors and corresponding weights.
 chai3d::cVector3d PointSet::minimizeCovariance(const std::vector<chai3d::cVector3d> &a_positions,
-                                               const std::vector<double> &a_weights,
-                                               const cVector3d &position)
+                                               const std::vector<double> &a_weights)
 {
     // define standard basis vectors
     const cVector3d zero(0, 0, 0);
@@ -224,7 +228,7 @@ chai3d::cVector3d PointSet::minimizeCovariance(const std::vector<chai3d::cVector
     for (int j = 0; j < 3; ++j)
         for (int k = 0; k < 3; ++k)
             for (int i = 0; i < a_positions.size(); ++i)
-                W(j, k) += cDot(e[j], a_positions[i] - position) * cDot(e[k], a_positions[i] - position) * a_weights[i];
+                W(j, k) += cDot(e[j], a_positions[i] - averagePoint) * cDot(e[k], a_positions[i] - averagePoint) * a_weights[i];
     
     // compute eigenvalues and eigenvectors of covariance matrix
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(W);
@@ -240,16 +244,37 @@ chai3d::cVector3d PointSet::minimizeCovariance(const std::vector<chai3d::cVector
 
 
 
-chai3d::cVector3d PointSet::closestPointToPlane(cVector3d toolPos, cVector3d point, cVector3d normal)
+double PointSet::surfaceFunction(cVector3d toolPos)
 {
-  cVector3d vec = toolPos - point;
-
-  double distance = vec * normal;
-
-  return toolPos - normal * distance;
+  return (toolPos - averagePoint) * currentNormal;
 }
 
+chai3d::cVector3d PointSet::closestPointToPlane(cVector3d toolPos)
+{
+  cVector3d vec = toolPos - averagePoint;
 
+  double distance = vec * currentNormal;
+
+  return toolPos - currentNormal * distance;
+}
+
+void PointSet::setLocalPoints(cVector3d pos)
+{
+  localPoints = tree->getPointsForArea(pos, radiusOfInfluence);
+  
+  for (int i : localColorIndices)
+  {
+    m_colors[i].setRedDark();
+  }
+
+  localColorIndices = tree->getCIsForArea(pos, radiusOfInfluence);
+
+  for (int i : localColorIndices)
+  {
+    m_colors[i].setGreenForest();
+  }
+
+}
 
 
 //===========================================================================
@@ -267,113 +292,140 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
                                        const cVector3d& a_toolVel,
                                        const unsigned int a_IDN)
 {
-
-
-    if (!m_interactionInside) {
-      m_interactionPoint = a_toolPos;
-    }
-
-    double mu_s = m_material->getStaticFriction();
-    double mu_k = m_material->getDynamicFriction();
-
-    double radiusOfInfluence = 0.5;
-    vector<cVector3d> localPoints = tree->getPointsForArea(m_interactionPoint, radiusOfInfluence);
-    vector<double> weights;
-
-    // Create weights vectors
-    for (cVector3d point : localPoints)
-    {
-      double w = (m_interactionPoint - point).length();
-      if (w < radiusOfInfluence)
-      {
-        weights.push_back(1.0 - (w / radiusOfInfluence));
-      }
-    }
-
-    // Find a Goodish point
-    cVector3d bestPoint(0, 0, 0);
-    double wSum;
-    for (int i = 0; i < localPoints.size(); ++i) {
-      bestPoint += localPoints[i] * weights[i];
-      wSum += weights[i];
-    }
-    bestPoint /= wSum;
-
+  // If we are not interacting with the object
+  if (!m_interactionInside)
+  {
+    //find the local points around the tool position
+    setLocalPoints(a_toolPos);
     
-    for (int i = 0; i < m_points.size(); ++i) {
-      cVector3d p = m_points[i];
-
-      m_colors[i].setRed();
-
-      if ((p - m_interactionPoint).length() < radiusOfInfluence) {
-        m_colors[i].setGreenLimeGreen();
-      }
-    } 
-
-
-    // If there are not enought points to calculate a normal or the device is inside the object
-    if (localPoints.size() < 3) {
+    // If there are not enough points to calculate a normal assume that we are not in contact with the object
+    if (localPoints.size() < 3)
+    {
+      m_interactionPoint = a_toolPos;
+      m_interactionInside = false;
+      m_interactionNormal.zero();
       oldNormal.zero();
     }
-    // If the device is not in contact with the object
-    else if (!m_interactionInside)
+    // There are enough points to calculate a normal
+    else
     {
-      cVector3d normal = minimizeCovariance(localPoints, weights, bestPoint);
-      // If the old normal is zero fix the new normal based on the tool position
-      if (oldNormal.equals(cVector3d(0, 0, 0)))
-        normal = (a_toolPos - bestPoint) * normal > 0 ? normal : -normal;
-      // Else fix the normal based on the old normal
+      // Create the weights vector and a weighted sum of the points
+      vector<double> weights;
+      averagePoint = cVector3d(0, 0, 0);
+      double weightSum;
+      for (cVector3d point : localPoints)
+      {
+        double w = (a_toolPos - point).length();
+        weights.push_back(1 - (w / radiusOfInfluence));
+
+        averagePoint += point * w;
+        weightSum += w;
+      }
+      averagePoint /= weightSum;
+
+      // Calculate a normal
+      currentNormal = minimizeCovariance(localPoints, weights);
+      // if there is no old normal fix the current normal with the device Position
+      if (oldNormal.length() == 0)
+        currentNormal = surfaceFunction(a_toolPos) > 0 ? currentNormal : -currentNormal;
+      // else fix the new normal witht the old normal
       else
-        normal = oldNormal * normal > 0 ? normal : -normal;
+        currentNormal = oldNormal * currentNormal > 0 ? currentNormal : -currentNormal;
 
-      cout << normal << endl;
+      oldNormal = currentNormal;
 
-      // set the old normal to be the new normal
-      oldNormal = normal;
+      surfaceValue = surfaceFunction(a_toolPos);
 
-      // calculate the surfaceValue
-      surfaceValue = (a_toolPos - bestPoint) * normal;
-
-      // IF the surfaceValue is less than 0 the device is interacting with the object
-      if (surfaceValue < 0)
+      // We are not in contact with the object
+      if (surfaceValue > 0)
+      {
+        m_interactionPoint = a_toolPos;
+        m_interactionInside = false;
+        m_interactionNormal = cVector3d(0, 0, 0);
+      }
+      // We are in contact with the object
+      else
       {
         m_interactionInside = true;
+        m_interactionPoint = closestPointToPlane(a_toolPos);
+        m_interactionNormal = currentNormal;
 
-        // find the closest point
-        m_interactionPoint = closestPointToPlane(a_toolPos, bestPoint, normal);
+        computeLocalInterationInside(a_toolPos, a_toolVel, a_IDN);
       }
     }
-    
-    /*
-    if (m_interactionInside) {
+  }
+  // Else we are in contact with the object
+  else
+  {
+    computeLocalInterationInside(a_toolPos, a_toolVel, a_IDN);
+  }
 
-      cout << "heyo" << endl;
+}
 
-      chai3d::cVector3d delta(0, 0, 0);
 
-      // get the tangent plane 
-      chai3d::cVector3d normal = minimizeCovariance(localPoints, weights, bestPoint);
+void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos, const chai3d::cVector3d & a_toolVel, const unsigned int a_IDN)
+{
+  double mu_s = m_material->getStaticFriction();
+  double mu_k = m_material->getDynamicFriction();
 
-      // fix the normal
-      normal = oldNormal * normal > 0 ? normal : -normal;
-      oldNormal = normal;
+  cVector3d delta(0, 0, 0);
 
-      surfaceValue = (a_toolPos - m_interactionPoint) * normal;
-      // The device has left the object
-      if (surfaceValue > 0) {
-        m_interactionInside = false;
-        m_interactionPoint = a_toolPos;
+  int count = 0;
+  int max = 5;
+  do {
+    // get the local points
+    //find the local points around the tool position
+    setLocalPoints(m_interactionPoint);
+
+    // If there are not enough points to calculate a normal assume that we are not in contact with the object
+    if (localPoints.size() < 3)
+    {
+      m_interactionPoint = a_toolPos;
+      m_interactionInside = false;
+      m_interactionNormal.zero();
+      oldNormal.zero();
+    }
+    // There are enough points to calculate a normal
+    else
+    {
+      // Create the weights vector and a weighted sum of the points
+      vector<double> weights;
+      averagePoint = m_interactionPoint;
+      for (cVector3d point : localPoints)
+      {
+        double w = (m_interactionPoint - point).length();
+        weights.push_back(1 - (w / radiusOfInfluence));
       }
-      else {
+
+      // Calculate a normal
+      currentNormal = minimizeCovariance(localPoints, weights);
+      // if there is no old normal fix the current normal with the device Position
+      currentNormal = oldNormal * currentNormal > 0 ? currentNormal : -currentNormal;
+
+      oldNormal = currentNormal;
+      m_interactionNormal = currentNormal;
+
+      surfaceValue = surfaceFunction(a_toolPos);
+
+      // We are not in contact with the object
+      if (surfaceValue > 0)
+      {
+        m_interactionPoint = a_toolPos;
+        m_interactionInside = false;
+        m_interactionNormal = cVector3d(0, 0, 0);
+      }
+      // We are in contact with the object
+      else
+      {
         // find the vector between the tool and the interation point
         chai3d::cVector3d vec = a_toolPos - m_interactionPoint;
 
-        double forceNormal = vec * normal;
-        double forcePerp = (vec - forceNormal * normal).length();
+        double forceNormal = vec * currentNormal;
+        double forcePerp = (vec - forceNormal * currentNormal).length();
 
         double value = abs(forcePerp / forceNormal);
 
-        chai3d::cVector3d frictionForce = vec - forceNormal * normal;
+        chai3d::cVector3d frictionForce = vec - forceNormal * currentNormal;
         frictionForce.normalize();
 
         frictionForce *= std::min(abs(mu_k * forceNormal), forcePerp);
@@ -384,7 +436,8 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
           if (value > mu_k) {
             // find the closest point on the tangent plane and use to find the closest point on surface
 
-            delta = closestPointToPlane(a_toolPos - frictionForce, bestPoint, normal) - m_interactionPoint;
+
+            delta = closestPointToPlane(a_toolPos - frictionForce) - m_interactionPoint;
             m_interactionPoint += delta;
             moving = true;
           }
@@ -396,7 +449,7 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
         else {
           if (value > mu_s) {
             // find the closest point on the tangent plane and use to find the closest point on surface
-            delta = closestPointToPlane(a_toolPos - frictionForce, bestPoint, normal) - m_interactionPoint;
+            delta = closestPointToPlane(a_toolPos - frictionForce) - m_interactionPoint;
             m_interactionPoint += delta;
             moving = true;
 
@@ -405,9 +458,10 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
             moving = false;
           }
         }
-
       }
-    } */
+    }
+    ++count;
+  } while (delta.length() > 0.0001 && count < max);
 
 }
 

@@ -9,6 +9,18 @@
 using namespace chai3d;
 using namespace std;
 
+struct ColoredPoint
+{
+  cVector3d point;
+  int colorIndex;
+
+  ColoredPoint(cVector3d p, int cI)
+  {
+    point = p;
+    colorIndex = cI;
+  }
+};
+
 class OctTree
 {
 
@@ -17,15 +29,16 @@ class OctTree
 
   vector<OctTree*> children;
 
-  vector<cVector3d> points;
+  vector<ColoredPoint> points;
 
 public:
   
-  OctTree(vector<cVector3d> ps, cVector3d cp, double x, double y, double z);
+  OctTree(vector<cVector3d> ps, vector<int> cIs, cVector3d cp, double x, double y, double z);
   ~OctTree();
 
   // Takes a centerpoint and a radius. Will treat the cursor as a cube
   vector<cVector3d> getPointsForArea(cVector3d, double);
+  vector<int> getCIsForArea(cVector3d, double);
 
 
 
