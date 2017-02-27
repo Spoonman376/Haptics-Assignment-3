@@ -377,6 +377,14 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
     // get the local points
     //find the local points around the tool position
     setLocalPoints(m_interactionPoint);
+    for (cVector3d point : oldLocalPoints)
+    {
+      double d = (point - m_interactionPoint).length();
+      if (d > radiusOfInfluence && d < radiusOfInfluence * 1.1)
+        localPoints.push_back(point);
+    }
+
+    oldLocalPoints = localPoints;
 
     // If there are not enough points to calculate a normal assume that we are not in contact with the object
     if (localPoints.size() < 3)
@@ -384,11 +392,13 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
       m_interactionPoint = a_toolPos;
       m_interactionInside = false;
       m_interactionNormal.zero();
+      oldLocalPoints.clear();
       oldNormal.zero();
     }
     // There are enough points to calculate a normal
     else
     {
+
       // Create the weights vector and a weighted sum of the points
       vector<double> weights;
       averagePoint.zero();
@@ -404,6 +414,7 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
       averagePoint /= weightSum;
 
       m_interactionPoint = closestPointToPlane(m_interactionPoint);
+
 
       // Calculate a normal
       currentNormal = minimizeCovariance(localPoints, weights);
@@ -421,6 +432,7 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
         m_interactionPoint = a_toolPos;
         m_interactionInside = false;
         m_interactionNormal = cVector3d(0, 0, 0);
+        oldLocalPoints.clear();
       }
       // We are in contact with the object
       else
@@ -443,8 +455,6 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
           // 
           if (value > mu_k) {
             // find the closest point on the tangent plane and use to find the closest point on surface
-
-
             delta = closestPointToPlane(a_toolPos - frictionForce) - m_interactionPoint;
             m_interactionPoint += delta;
             moving = true;

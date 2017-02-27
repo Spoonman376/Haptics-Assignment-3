@@ -50,8 +50,10 @@ class PointSet : public chai3d::cMultiMesh
     cVector3d averagePoint = chai3d::cVector3d(0, 0, 0);
     bool moving = false;
 
+    vector<cVector3d> oldLocalPoints;
     vector<cVector3d> localPoints;
     vector<int> localColorIndices;
+
 
     void setLocalPoints(cVector3d);
 
