@@ -292,6 +292,7 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
                                        const cVector3d& a_toolVel,
                                        const unsigned int a_IDN)
 {
+
   // If we are not interacting with the object
   if (!m_interactionInside)
   {
@@ -327,7 +328,7 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
       currentNormal = minimizeCovariance(localPoints, weights);
       // if there is no old normal fix the current normal with the device Position
       if (oldNormal.length() == 0)
-        currentNormal = surfaceFunction(a_toolPos) > 0 ? currentNormal : -currentNormal;
+        currentNormal = surfaceFunction(m_interactionPoint) > 0 ? currentNormal : -currentNormal;
       // else fix the new normal witht the old normal
       else
         currentNormal = oldNormal * currentNormal > 0 ? currentNormal : -currentNormal;
@@ -374,17 +375,8 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
   int count = 0;
   int max = 1;
   do {
-    // get the local points
     //find the local points around the tool position
     setLocalPoints(m_interactionPoint);
-    for (cVector3d point : oldLocalPoints)
-    {
-      double d = (point - m_interactionPoint).length();
-      if (d > radiusOfInfluence && d < radiusOfInfluence * 1.1)
-        localPoints.push_back(point);
-    }
-
-    oldLocalPoints = localPoints;
 
     // If there are not enough points to calculate a normal assume that we are not in contact with the object
     if (localPoints.size() < 3)
@@ -392,7 +384,6 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
       m_interactionPoint = a_toolPos;
       m_interactionInside = false;
       m_interactionNormal.zero();
-      oldLocalPoints.clear();
       oldNormal.zero();
     }
     // There are enough points to calculate a normal
@@ -432,7 +423,6 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
         m_interactionPoint = a_toolPos;
         m_interactionInside = false;
         m_interactionNormal = cVector3d(0, 0, 0);
-        oldLocalPoints.clear();
       }
       // We are in contact with the object
       else

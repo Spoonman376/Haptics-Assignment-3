@@ -79,7 +79,6 @@ PointSet *desk;
 PointSet *bunny;
 PointSet *room;
 
-
 // flag to indicate if the haptic simulation currently running
 bool simulationRunning = false;
 
@@ -133,6 +132,8 @@ void updateHaptics(void);
 
 // this function closes the application
 void close(void);
+
+void setFrictions(double s, double k);
 
 
 //==============================================================================
@@ -371,7 +372,7 @@ int main(int argc, char* argv[])
     bowl->loadFromFile("p1-bowl.ply");
     bowl->radiusOfInfluence = 0.5;
     dragon->loadFromFile("p2-dragon.ply");
-    dragon->radiusOfInfluence = 0.1;
+    dragon->radiusOfInfluence = 0.05;
     desk->loadFromFile("p2-desk.ply");
     desk->radiusOfInfluence = 0.1;
 
@@ -470,6 +471,9 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+
+
+
 //------------------------------------------------------------------------------
 
 void windowSizeCallback(GLFWwindow* a_window, int a_width, int a_height)
@@ -501,6 +505,7 @@ void scrollCallback(GLFWwindow* window, double x, double y)
   camera->setSphericalAzimuthRad(azu);
   camera->setSphericalPolarRad(alt);
 
+  tool->setRadius(r * 0.02);
 }
 
 void mouse(GLFWwindow* window, int button, int action, int mods)
@@ -624,8 +629,32 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
       world->addChild(tool);
       world->addChild(room);
     }
+    else if (a_key == GLFW_KEY_A)
+    {
+      setFrictions(0, 0);
+    }
+    else if (a_key == GLFW_KEY_S)
+    {
+      setFrictions(0.3, 0.2);
+    }
+    else if (a_key == GLFW_KEY_D)
+    {
+      setFrictions(0.7, 0.5);
+    }
+
 
 }
+
+void setFrictions(double s, double k)
+{
+  ledge->setFriction(s, k);
+  bowl->setFriction(s, k);
+  dragon->setFriction(s, k);
+  desk->setFriction(s, k);
+  bunny->setFriction(s, k);
+  room->setFriction(s, k);
+}
+
 
 //------------------------------------------------------------------------------
 
@@ -670,6 +699,7 @@ void updateGraphics(void)
     world->updateShadowMaps(false, mirroredDisplay);
 
     // render world
+    camera->setSphericalOriginReference(tool->getDeviceGlobalPos());
     camera->renderView(width, height);
 
     // wait until all GL commands are completed
