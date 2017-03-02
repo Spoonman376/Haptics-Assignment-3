@@ -260,20 +260,57 @@ chai3d::cVector3d PointSet::closestPointToPlane(cVector3d toolPos)
 
 void PointSet::setLocalPoints(cVector3d pos)
 {
-  localPoints.clear();
-  tree->getPointsForArea(localPoints, pos, radiusOfInfluence);
+  vector<cVector3d> points;
+  double r = radiusOfInfluence;
+  int count = 0;
+  bool b =false;
+  do
+  {
+    points.clear();
+    tree->getPointsForArea(points, pos, r);
+
+    r = (points.size() > maxPoints) ? r * 0.9 : r * 1.05;
+    if (r > radiusOfInfluence)
+    {
+      b = true;
+      break;
+    }
+
+    ++count;
+    if (count > 25)
+    {
+      b = true;
+      tree->getPointsForArea(points, pos, radiusOfInfluence);
+      break;
+    }
+  } while (points.size() > maxPoints || points.size() < minPoints);
+
+  localPoints = points;
   
+  if (!b)
+  {
+    for (cVector3d p : oldLocalPoints)
+    {
+      double d = (p - pos).length();
+      if (d < radiusOfInfluence && d > r)
+        localPoints.push_back(p);
+    }
+  }
+
+  oldLocalPoints = localPoints;
+
+  /*
   for (int i : localColorIndices)
   {
     m_colors[i].setRedDark();
   }
 
-  localColorIndices = tree->getCIsForArea(pos, radiusOfInfluence);
+  localColorIndices = tree->getCIsForArea(pos, r);
 
   for (int i : localColorIndices)
   {
     m_colors[i].setGreenForest();
-  }
+  } */
 
 }
 
@@ -293,7 +330,6 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
                                        const cVector3d& a_toolVel,
                                        const unsigned int a_IDN)
 {
-
   // If we are not interacting with the object
   if (!m_interactionInside)
   {
@@ -301,12 +337,13 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
     setLocalPoints(a_toolPos);
     
     // If there are not enough points to calculate a normal assume that we are not in contact with the object
-    if (localPoints.size() < 3)
+    if (localPoints.size() < minPoints)
     {
       m_interactionPoint = a_toolPos;
       m_interactionInside = false;
       m_interactionNormal.zero();
       oldNormal.zero();
+      oldLocalPoints.clear();
     }
     // There are enough points to calculate a normal
     else
@@ -344,6 +381,7 @@ void PointSet::computeLocalInteraction(const cVector3d& a_toolPos,
         m_interactionPoint = a_toolPos;
         m_interactionInside = false;
         m_interactionNormal = cVector3d(0, 0, 0);
+        oldLocalPoints.clear();
       }
       // We are in contact with the object
       else
@@ -380,7 +418,7 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
     setLocalPoints(m_interactionPoint);
 
     // If there are not enough points to calculate a normal assume that we are not in contact with the object
-    if (localPoints.size() < 3)
+    if (localPoints.size() < minPoints)
     {
       m_interactionPoint = a_toolPos;
       m_interactionInside = false;
@@ -424,6 +462,7 @@ void PointSet::computeLocalInterationInside(const chai3d::cVector3d & a_toolPos,
         m_interactionPoint = a_toolPos;
         m_interactionInside = false;
         m_interactionNormal = cVector3d(0, 0, 0);
+        oldLocalPoints.clear();
       }
       // We are in contact with the object
       else

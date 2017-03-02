@@ -9,8 +9,8 @@ OctTree::OctTree(vector<cVector3d> ps, vector<int> cIs, cVector3d cp, double x, 
   disty = y;
   distz = z;
   
-  // if there are more than 100 points split
-  if (ps.size() > 100) {
+  // if there are more than 25 points split
+  if (ps.size() > 25) {
     
     vector<cVector3d> lll, llg, lgl, lgg, gll, glg, ggl, ggg;
     vector<int> clll, cllg, clgl, clgg, cgll, cglg, cggl, cggg;

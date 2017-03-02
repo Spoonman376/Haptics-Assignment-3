@@ -78,6 +78,7 @@ PointSet *dragon;
 PointSet *desk;
 PointSet *bunny;
 PointSet *room;
+PointSet *current;
 
 // flag to indicate if the haptic simulation currently running
 bool simulationRunning = false;
@@ -366,6 +367,8 @@ int main(int argc, char* argv[])
     bunny = new PointSet();
     room = new PointSet();
 
+    current = ledge;
+
     // load point data file file
     ledge->loadFromFile("p1-ledge.ply");
     ledge->radiusOfInfluence = 0.5;
@@ -375,9 +378,18 @@ int main(int argc, char* argv[])
     dragon->radiusOfInfluence = 0.05;
     desk->loadFromFile("p2-desk.ply");
     desk->radiusOfInfluence = 0.1;
+    desk->maxPoints = 100;
+    desk->minPoints = 6;
 
-//    bunny->loadFromFile("pb-bunny.ply");
-//    room->loadFromFile("pb-room.ply");
+    bunny->loadFromFile("pb-bunny.ply");
+    bunny->radiusOfInfluence = 0.05;
+    bunny->maxPoints = 100;
+    bunny->minPoints = 6;
+
+    room->loadFromFile("pb-room.ply");
+    room->radiusOfInfluence = 0.1;
+    room->maxPoints = 100;
+    room->minPoints = 6;
 
     // the surface effect renders a spring force between the device and proxy
     // points with the given stiffness in the material
@@ -537,8 +549,6 @@ void motion(GLFWwindow* window, double x, double y)
     camera->setSphericalAzimuthRad(azu - dx * 0.0025);
     camera->setSphericalPolarRad(alt - dy * 0.0025);
     camera->setSphericalRadius(r);
-
-
   }
 }
 
@@ -597,37 +607,42 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(ledge);
+      current = ledge;
     }
     else if (a_key == GLFW_KEY_2)
     {
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(bowl);
-
+      current = bowl;
     }
     else if (a_key == GLFW_KEY_3)
     {
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(dragon);
+      current = dragon;
     }
     else if (a_key == GLFW_KEY_4)
     {
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(desk);
+      current = desk;
     }
     else if (a_key == GLFW_KEY_5)
     {
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(bunny);
+      current = bunny;
     }
     else if (a_key == GLFW_KEY_6)
     {
       world->clearAllChildren();
       world->addChild(tool);
       world->addChild(room);
+      current = room;
     }
     else if (a_key == GLFW_KEY_A)
     {
@@ -685,7 +700,7 @@ void updateGraphics(void)
 
     // update haptic and graphic rate data
     labelRates->setText(cStr(freqCounterGraphics.getFrequency(), 0) + " Hz / " +
-        cStr(freqCounterHaptics.getFrequency(), 0) + " Hz");
+        cStr(freqCounterHaptics.getFrequency(), 0) + " Hz   " + to_string(current->localPoints.size()));
 
     // update position of label
     labelRates->setLocalPos((int)(0.5 * (width - labelRates->getWidth())), 15);
