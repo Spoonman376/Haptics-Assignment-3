@@ -260,7 +260,8 @@ chai3d::cVector3d PointSet::closestPointToPlane(cVector3d toolPos)
 
 void PointSet::setLocalPoints(cVector3d pos)
 {
-  localPoints = tree->getPointsForArea(pos, radiusOfInfluence);
+  localPoints.clear();
+  tree->getPointsForArea(localPoints, pos, radiusOfInfluence);
   
   for (int i : localColorIndices)
   {

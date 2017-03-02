@@ -37,7 +37,7 @@ public:
   ~OctTree();
 
   // Takes a centerpoint and a radius. Will treat the cursor as a cube
-  vector<cVector3d> getPointsForArea(cVector3d, double);
+  void getPointsForArea(vector<cVector3d>&, cVector3d, double);
   vector<int> getCIsForArea(cVector3d, double);
 
 

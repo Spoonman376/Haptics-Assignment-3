@@ -76,11 +76,10 @@ OctTree::OctTree(vector<cVector3d> ps, vector<int> cIs, cVector3d cp, double x, 
 }
 
 
-vector<cVector3d> OctTree::getPointsForArea(cVector3d cp, double r)
+void OctTree::getPointsForArea(vector<cVector3d> &pointsInArea, cVector3d cp, double r)
 {
 
-  vector<cVector3d> pointsInArea; 
-  if (abs(cp.x() - centerPoint.x()) < distx + r && abs(cp.y() - centerPoint.y()) < disty + r && abs(cp.z() - centerPoint.z()) < distz + r) 
+  if (abs(cp.x() - centerPoint.x()) < distx + r && abs(cp.y() - centerPoint.y()) < disty + r && abs(cp.z() - centerPoint.z()) < distz + r)
   {
     for (ColoredPoint cPoint : points)
     {
@@ -90,12 +89,9 @@ vector<cVector3d> OctTree::getPointsForArea(cVector3d cp, double r)
  
     for (OctTree* child : children)
     {
-      vector<cVector3d> childPoints = child->getPointsForArea(cp, r);
-      copy(childPoints.begin(), childPoints.end(), back_inserter(pointsInArea));
+      child->getPointsForArea(pointsInArea, cp, r);
     }
   }
-
-  return pointsInArea;
 }
 
 vector<int> OctTree::getCIsForArea(cVector3d cp, double r)
